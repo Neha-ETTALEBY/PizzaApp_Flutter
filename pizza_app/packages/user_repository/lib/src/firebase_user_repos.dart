@@ -1,8 +1,5 @@
-// ignore_for_file: unnecessary_import
-
 import 'dart:developer';
 import 'package:rxdart/rxdart.dart';
-import 'package:user_repository/src/user_repos.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:user_repository/user_repository.dart';
@@ -18,14 +15,15 @@ class FirebaseUserRepo implements UserRepository {
   // this stream is going to change every time the app detects a new user is been connected
   @override
   Stream<MyUser?> get user {
-    return _firebaseAuth.authStateChanges().asyncMap((firebaseUser) async {
+    return _firebaseAuth.authStateChanges().flatMap((firebaseUser) async *{
       if (firebaseUser == null) {
-        return MyUser.empty;
-      } else { //stopped here you should correct it using flat map 
-        var documentSnapshot =
-            await usersCollection.doc(firebaseUser.uid).get();
-        return MyUser.fromEntity(
-            MyUserEntity.fromDocument(documentSnapshot.data()!));
+        yield MyUser.empty;
+      } else { 
+        yield  await usersCollection
+        .doc(firebaseUser.uid)
+        .get()
+        .then((value)=>MyUser.fromEntity(MyUserEntity.fromDocument(value.data()!)));
+         
       }
     });
   }
